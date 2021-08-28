@@ -23,7 +23,7 @@ fn main() -> windows::Result<()> {
         WaitForSingleObject(event, 0);
         CloseHandle(event).ok()?;
 
-        MessageBoxA(None, "Text", "Caption", MB_OK);
+        MessageBoxA(None, "Hello, world!!!", "Caption", MB_OK);
     }
 
     Ok(())
