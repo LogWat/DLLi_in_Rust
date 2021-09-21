@@ -1,31 +1,14 @@
-mod bindings {
-    windows::include_bindings!();
-}
+extern crate user32;
+extern crate winapi;
 
-use bindings::{
-    Windows::Data::Xml::Dom::*,
-    Windows::Win32::Foundation::CloseHandle,
-    Windows::Win32::System::Threading::{CreateEventW, SetEvent, WaitForSingleObject},
-    Windows::Win32::UI::WindowsAndMessaging::{MessageBoxA, MB_OK},
-};
+const WH_KEYBOARD_LL: i32 = 13;
 
-fn main() -> windows::Result<()> {
-    let doc = XmlDocument::new()?;
-    doc.LoadXml("<html>hello world</html>")?;
-
-    let root = doc.DocumentElement()?;
-    assert!(root.NodeName()? == "html");
-    assert!(root.InnerText()? == "hello world");
-
+fn main() {
     unsafe {
-        let event = CreateEventW(std::ptr::null_mut(), true, false, None);
-        SetEvent(event).ok()?;
-        WaitForSingleObject(event, 0);
-        CloseHandle(event).ok()?;
-
-        MessageBoxA(None, "Hello, world!!!", "Caption", MB_OK);
+        let hook_id = user32::SetWindowsHookExA(
+            WH_KEYBOAD_LL, 
+            lpfn: HOOKPROC, 
+            hmod: HINSTANCE, 
+            dwThreadId: DWORD)
     }
-
-    Ok(())
 }
-
