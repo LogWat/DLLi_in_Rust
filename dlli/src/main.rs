@@ -2,7 +2,10 @@ extern crate user32;
 extern crate winapi;
 extern crate kernel32;
 
-use kernel32::OpenProcess;
+use kernel32::{
+    OpenProcess,
+    CloseHandle
+};
 use winapi::{
     um::{
         winnt::{
@@ -15,7 +18,9 @@ use winapi::{
         }
     },
     shared::minwindef::{
-        DWORD, FALSE
+        DWORD, 
+        FALSE,
+        BOOL
     }
 };
 
@@ -25,10 +30,12 @@ fn main() {
     println!("{}", pid);
 
     unsafe {
-        let process = OpenProcess(
+        let process = Some(OpenProcess(
             PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_WRITE, 
             FALSE, 
-            pid).as_ref().unwrap_or_else(|| panic!("{}", GetLastError()));
+            pid)).unwrap_or_else(|| panic!("{}", GetLastError()));
+
+        CloseHandle(process);
     }
 }
 
