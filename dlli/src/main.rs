@@ -1,15 +1,28 @@
 extern crate user32;
 extern crate winapi;
+extern crate kernel32;
 
-const WH_KEYBOARD_LL: i32 = 13;
+use kernel32::OpenProcess;
+use winapi::{
+    um::{
+        winnt::{
+            PROCESS_ALL_ACCESS
+        },
+        errhandlingapi::{
+            GetLastError
+        }
+    },
+    shared::minwindef::{
+        DWORD, FALSE
+    }
+};
 
 fn main() {
+    let processid: DWORD = 10000;
     unsafe {
-        let hook_id = user32::SetWindowsHookExA(
-            WH_KEYBOARD_LL,                     // フックタイプ
-            lpfn: HOOKPROC,                     // windowがmessageを処理する際に呼び出す関数のaddr
-            hmod: HINSTANCE,                    // DLL
-            0                                   // 0: すべてのGUIスレッドにフックを設定
-        );
+        let process = OpenProcess(
+            PROCESS_ALL_ACCESS, 
+            FALSE, 
+            processid).as_ref().expect(GetLastError());
     }
 }
