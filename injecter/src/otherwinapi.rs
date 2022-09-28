@@ -1,7 +1,8 @@
+use std::{ptr, mem};
 use winapi::{
     um::{
-        winnt::{},
-        libloaderapi,
+        winnt::{HANDLE},
+        libloaderapi, processthreadsapi,
     },
     shared::{
         minwindef::*,
@@ -28,5 +29,24 @@ pub fn get_proc_address(module_handle: *mut u8, proc_name: &str) -> Result<*mut 
         Err(unsafe { winapi::um::errhandlingapi::GetLastError() })
     } else {
         Ok(pa as *mut u8)
+    }
+}
+
+pub fn create_remote_thread(process_handle: *mut u8, start_addr: *mut u8, param: *mut u8) -> Result<*mut u8, u32> {
+    let thread = unsafe {
+        processthreadsapi::CreateRemoteThread(
+            process_handle as HANDLE,
+            ptr::null_mut(),
+            0,
+            Some(mem::transmute(start_addr)),
+            param as *mut _,
+            0,
+            ptr::null_mut(),
+        )
+    };
+    if thread.is_null() {
+        Err(unsafe { winapi::um::errhandlingapi::GetLastError() })
+    } else {
+        Ok(thread as *mut u8)
     }
 }
