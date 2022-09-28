@@ -7,7 +7,7 @@ build_dll:
 	cd dll && cargo build --release
 
 test_injecter:
-	cd injecter && cargo run --release
+	cd injecter && cargo run
 
 test_dll:
-	cd dll && cargo run --release
+	cd dll && cargo run

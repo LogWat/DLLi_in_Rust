@@ -1,8 +1,8 @@
 use std::{mem, ptr};
 use winapi::{
     um::{
-        winnt::{HANDLE, PROCESS_ALL_ACCESS},
-        processthreadsapi, handleapi, errhandlingapi, psapi,
+        winnt::{HANDLE, PROCESS_ALL_ACCESS, MEM_COMMIT, MEM_RELEASE, PAGE_READWRITE},
+        processthreadsapi, handleapi, errhandlingapi, psapi, memoryapi,
         tlhelp32,
         tlhelp32::{
             PROCESSENTRY32W, TH32CS_SNAPPROCESS,
@@ -12,6 +12,14 @@ use winapi::{
         minwindef::{MAX_PATH},
     }
 };
+
+#[allow(dead_code)]
+pub enum MemSize {
+    Byte(u8),
+    Word(u16),
+    Dword(u32),
+    Qword(u64),
+}
 
 pub struct Process {
     pub handle: HANDLE,
@@ -51,6 +59,44 @@ impl Process {
         }
 
         String::from_utf16_lossy(&name)
+    }
+
+    pub fn alloc_mem(&self, size: usize) -> Result<u32, u32> {
+        let addr = unsafe {
+            memoryapi::VirtualAllocEx(
+                self.handle,
+                std::ptr::null_mut(),
+                size,
+                MEM_COMMIT | MEM_RELEASE,
+                PAGE_READWRITE,
+            )
+        };
+        if addr.is_null() {
+            return Err(unsafe { errhandlingapi::GetLastError() });
+        }
+
+        Ok(addr as u32)
+    }
+
+    pub fn write_mem(&self, address: usize, data: &str) -> Result<(), u32> {
+        let data = data.as_bytes();
+        if data.len() == 0 {
+            return Ok(());
+        }
+
+        if unsafe {
+            memoryapi::WriteProcessMemory(
+                self.handle,
+                address as *mut _,
+                data.as_ptr() as *const _,
+                data.len(),
+                ptr::null_mut(),
+            )
+        } == 0 {
+            return Err(unsafe { errhandlingapi::GetLastError() });
+        }
+
+        Ok(())
     }
 }
 
