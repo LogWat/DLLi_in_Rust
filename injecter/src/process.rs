@@ -2,12 +2,15 @@ use std::{mem, ptr};
 use winapi::{
     um::{
         winnt::{HANDLE, PROCESS_ALL_ACCESS},
-        processthreadsapi, handleapi, errhandlingapi,
+        processthreadsapi, handleapi, errhandlingapi, psapi,
         tlhelp32,
         tlhelp32::{
             PROCESSENTRY32W, THREADENTRY32, TH32CS_SNAPPROCESS, TH32CS_SNAPTHREAD,
         }
     },
+    shared::{
+        minwindef::{DWORD, MAX_PATH},
+    }
 };
 
 pub struct Process {
@@ -37,6 +40,21 @@ impl Process {
 
     pub fn is_valid(&self) -> bool {
         self.handle != std::ptr::null_mut()
+    }
+
+    pub fn name(&self) -> String {
+        let mut name = [0u16; MAX_PATH];
+
+        unsafe {
+            psapi::GetModuleBaseNameW(
+                self.handle,
+                std::ptr::null_mut(),
+                name.as_mut_ptr(),
+                MAX_PATH as u32,
+            );
+        }
+
+        String::from_utf16_lossy(&name)
     }
 }
 
