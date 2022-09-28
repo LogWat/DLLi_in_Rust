@@ -1,13 +1,21 @@
 use winapi::{
     um::{
         winnt::{HANDLE, PROCESS_ALL_ACCESS},
-        processthreadsapi,
+        processthreadsapi, handleapi,
     },
 };
 
 pub struct Process {
     pub handle: HANDLE,
     pub pid: u32,
+}
+
+impl Drop for Process {
+    fn drop(&mut self) {
+        unsafe {
+            handleapi::CloseHandle(self.handle);
+        }
+    }
 }
 
 impl Process {
