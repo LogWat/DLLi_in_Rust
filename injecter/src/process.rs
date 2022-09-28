@@ -5,11 +5,11 @@ use winapi::{
         processthreadsapi, handleapi, errhandlingapi, psapi,
         tlhelp32,
         tlhelp32::{
-            PROCESSENTRY32W, THREADENTRY32, TH32CS_SNAPPROCESS, TH32CS_SNAPTHREAD,
+            PROCESSENTRY32W, TH32CS_SNAPPROCESS,
         }
     },
     shared::{
-        minwindef::{DWORD, MAX_PATH},
+        minwindef::{MAX_PATH},
     }
 };
 
@@ -36,10 +36,6 @@ impl Process {
             handle,
             pid,
         }
-    }
-
-    pub fn is_valid(&self) -> bool {
-        self.handle != std::ptr::null_mut()
     }
 
     pub fn name(&self) -> String {
