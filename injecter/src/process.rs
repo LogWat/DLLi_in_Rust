@@ -87,7 +87,7 @@ impl Process {
         Ok(addr as u32)
     }
 
-    pub fn write_mem(&self, address: usize, data: &str) -> Result<(), u32> {
+    pub fn write_mem(&self, address: u32, data: &str) -> Result<(), u32> {
         let data = data.as_bytes();
         if data.len() == 0 {
             return Ok(());
@@ -96,16 +96,34 @@ impl Process {
         if unsafe {
             memoryapi::WriteProcessMemory(
                 self.handle,
-                address as *mut _,
-                data.as_ptr() as *const _,
-                data.len(),
-                ptr::null_mut(),
+                address as _,
+                data.as_ptr() as _,
+                data.len() as _,
+                0 as _,
             )
         } == 0 {
             return Err(unsafe { errhandlingapi::GetLastError() });
         }
 
         Ok(())
+    }
+
+    #[allow(dead_code)]
+    pub fn change_protection(&self, address: u32, size: u32, protection: u32) -> Result<u32, u32> {
+        let mut old_protection = 0;
+        if unsafe {
+            memoryapi::VirtualProtectEx(
+                self.handle,
+                address as _,
+                size as _,
+                protection,
+                &mut old_protection,
+            )
+        } == 0 {
+            return Err(unsafe { errhandlingapi::GetLastError() });
+        }
+
+        Ok(old_protection)
     }
 }
 

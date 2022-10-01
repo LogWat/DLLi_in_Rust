@@ -36,40 +36,36 @@ fn print_process() {
 }
 
 fn inject_dll(pid: u32, dll_path: &str) -> Result<*mut u8, String> {
-    let process = process::Process::new(pid);
-    let dll_path = match std::fs::canonicalize(dll_path) {
-        Ok(path) => path,
+    println!("Injecting dll into process {}", pid);
+    let process = match process::Process::new(pid) {
+        Ok(process) => process,
         Err(error) => {
             return Err(format!("Error: {}", error));
         }
     };
-    let dll_path = match dll_path.to_str() {
-        Some(path) => path,
-        None => {
-            return Err("Error: Invalid path".to_string());
-        }
-    };
-    let mem = match process.alloc_mem(dll_path.len() + 1) {
+
+    let mem = match process.alloc_mem(dll_path.len() as u32) {
         Ok(mem) => mem,
         Err(error) => {
             return Err(format!("Failed to allocate memory. Code: {}", error));
         }
     };
-    match process.write_mem(mem as usize, dll_path) {
+
+    match process.write_mem(mem, dll_path) {
         Ok(_) => (),
         Err(error) => {
             return Err(format!("Failed to write memory. Code: {}", error));
         }
     };
 
-    let kernel32 = match otherwinapi::get_module_handle("kernel32.dll\0") {
+    let kernel32 = match otherwinapi::get_module_handle(b"Kernel32.dll\0") {
         Ok(handle) => handle,
         Err(error) => {
             return Err(format!("Error: Failed GetModuleHandle. Code: {}", error));
         }
     };
 
-    let load_lib = match otherwinapi::get_proc_address(kernel32, "LoadLibraryA\0") {
+    let load_lib = match otherwinapi::get_proc_address(kernel32, b"LoadLibraryA\0") {
         Ok(handle) => handle,
         Err(error) => {
             return Err(format!("Error: Failed GetProcAddress. Code: {}", error));
@@ -77,9 +73,9 @@ fn inject_dll(pid: u32, dll_path: &str) -> Result<*mut u8, String> {
     };
 
     let thread = match otherwinapi::create_remote_thread(
-        process.handle as *mut u8,
-        load_lib,
-        mem as *mut u8,
+        process.handle,
+        load_lib as u32,
+        mem,
     ) {
         Ok(thread) => thread,
         Err(error) => {
@@ -87,5 +83,5 @@ fn inject_dll(pid: u32, dll_path: &str) -> Result<*mut u8, String> {
         }
     };
 
-    Ok(thread)
+    Ok(thread as *mut u8)
 }
