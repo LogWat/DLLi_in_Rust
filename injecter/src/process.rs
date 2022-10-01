@@ -1,7 +1,7 @@
 use std::{mem, ptr};
 use winapi::{
     um::{
-        winnt::{HANDLE, PROCESS_ALL_ACCESS, MEM_COMMIT, MEM_RELEASE, PAGE_READWRITE},
+        winnt::{HANDLE, PROCESS_ALL_ACCESS, MEM_COMMIT, MEM_RESERVE, PAGE_READWRITE},
         processthreadsapi, handleapi, errhandlingapi, psapi, memoryapi,
         tlhelp32,
         tlhelp32::{
@@ -9,7 +9,7 @@ use winapi::{
         }
     },
     shared::{
-        minwindef::{MAX_PATH},
+        minwindef::{MAX_PATH}
     }
 };
 
@@ -35,15 +35,24 @@ impl Drop for Process {
 }
 
 impl Process {
-    pub fn new(pid: u32) -> Self {
+    #[allow(dead_code)]
+    pub fn is_valid(&self) -> bool {
+        self.handle != ptr::null_mut()
+    }
+
+
+    pub fn new(pid: u32) -> Result<Self, u32> {
         let handle = unsafe {
             processthreadsapi::OpenProcess(PROCESS_ALL_ACCESS, 0, pid)
         };
+        if handle == ptr::null_mut() {
+            return Err(unsafe{ errhandlingapi::GetLastError() });
+        }
 
-        Self {
+        Ok(Process {
             handle,
             pid,
-        }
+        })
     }
 
     pub fn name(&self) -> String {
@@ -61,13 +70,13 @@ impl Process {
         String::from_utf16_lossy(&name)
     }
 
-    pub fn alloc_mem(&self, size: usize) -> Result<u32, u32> {
+    pub fn alloc_mem(&self, size: u32) -> Result<u32, u32> {
         let addr = unsafe {
             memoryapi::VirtualAllocEx(
                 self.handle,
-                std::ptr::null_mut(),
-                size,
-                MEM_COMMIT | MEM_RELEASE,
+                0 as _,
+                size as _,
+                MEM_COMMIT | MEM_RESERVE,
                 PAGE_READWRITE,
             )
         };
@@ -117,7 +126,16 @@ pub fn enumerate_process() -> Result<Vec<Process>, u32> {
         tlhelp32::Process32FirstW(snap, &mut psetry)
     };
     while ret != 0 {
-        prs.push(Process::new(psetry.th32ProcessID));
+        let p = match Process::new(psetry.th32ProcessID) {
+            Ok(p) => p,
+            Err(_) => {
+                ret = unsafe {
+                    tlhelp32::Process32NextW(snap, &mut psetry)
+                };
+                continue;
+            }
+        };
+        prs.push(p);
         ret = unsafe {
             tlhelp32::Process32NextW(snap, &mut psetry)
         };
