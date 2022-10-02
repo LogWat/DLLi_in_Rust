@@ -21,3 +21,9 @@ DLLiはAPI Hookの手法の一つ
 3. 挿入したいDLLがプログラムのメモリ空間へマップされる
 4. InjectされたDLLのDLLMainが呼び出される
 
+---
+### 方針
+#### CreateRemoteThread関数を利用する
+1. 攻撃対象のプロセス仮想メモリに挿入するDLLのファイル名を書き込む（VirtualAllocEx, WriteProcessMemory）
+2. 挿入するDLLを攻撃対象のプロセスに読み込ませる（CreateRemoteThread)
+3. 攻撃対象のプロセスの関数のアドレスを挿入したDLL内の関数のアドレスで上書き
