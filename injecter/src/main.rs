@@ -8,9 +8,12 @@ fn main() {
     std::io::stdin().read_line(&mut s).unwrap();
     let pid = s.trim().parse::<u32>().unwrap();
     println!("Enter the path to the dll you want to inject:");
-    std::io::stdin().read_line(&mut s).unwrap();
-    let dll_path = s.trim();
-    let _rthread = match inject_dll(pid, dll_path) {
+    let mut dll_path = String::new();
+    std::io::stdin().read_line(&mut dll_path).unwrap();
+    // remove \x0d\x0a
+    dll_path.pop();
+    dll_path.pop();
+    let _rthread = match inject_dll(pid, &dll_path) {
         Ok(rthread) => rthread,
         Err(e) => {
             println!("Error: {}", e);
@@ -36,7 +39,7 @@ fn print_process() {
 }
 
 fn inject_dll(pid: u32, dll_path: &str) -> Result<*mut u8, String> {
-    println!("Injecting dll into process {}", pid);
+    println!("Injecting {} into process {}", dll_path, pid);
     let process = match process::Process::new(pid) {
         Ok(process) => process,
         Err(error) => {
@@ -51,6 +54,8 @@ fn inject_dll(pid: u32, dll_path: &str) -> Result<*mut u8, String> {
         }
     };
 
+    println!("Allocated memory at 0x{:x}", mem as u32);
+
     match process.write_mem(mem, dll_path) {
         Ok(_) => (),
         Err(error) => {
@@ -58,14 +63,14 @@ fn inject_dll(pid: u32, dll_path: &str) -> Result<*mut u8, String> {
         }
     };
 
-    let kernel32 = match otherwinapi::get_module_handle(b"Kernel32.dll\0") {
+    let kernel32 = match otherwinapi::get_module_handle("kernel32.dll\0") {
         Ok(handle) => handle,
         Err(error) => {
             return Err(format!("Error: Failed GetModuleHandle. Code: {}", error));
         }
     };
 
-    let load_lib = match otherwinapi::get_proc_address(kernel32, b"LoadLibraryA\0") {
+    let load_lib = match otherwinapi::get_proc_address(kernel32, "LoadLibraryA\0") {
         Ok(handle) => handle,
         Err(error) => {
             return Err(format!("Error: Failed GetProcAddress. Code: {}", error));

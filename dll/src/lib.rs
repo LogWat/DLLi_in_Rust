@@ -23,7 +23,7 @@ pub extern "stdcall" fn DllMain(
         DLL_PROCESS_ATTACH => {
             unsafe { libloaderapi::DisableThreadLibraryCalls(hinstDLL) };
             println!("DLL_PROCESS_ATTACH");
-            MsgBox("INJECTED!", "Hello from DLL!");
+            MsgBox("INJECTED!", "Hello from DLL!!");
             true as i32
         },
         DLL_PROCESS_DETACH => {
