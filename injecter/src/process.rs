@@ -1,3 +1,5 @@
+#[allow(dead_code)]
+
 use std::{mem, ptr};
 use winapi::{
     um::{
@@ -13,7 +15,6 @@ use winapi::{
     }
 };
 
-#[allow(dead_code)]
 pub enum MemSize {
     Byte(u8),
     Word(u16),
@@ -35,7 +36,6 @@ impl Drop for Process {
 }
 
 impl Process {
-    #[allow(dead_code)]
     pub fn is_valid(&self) -> bool {
         self.handle != ptr::null_mut()
     }
@@ -108,7 +108,6 @@ impl Process {
         Ok(())
     }
 
-    #[allow(dead_code)]
     pub fn change_protection(&self, address: u32, size: u32, protection: u32) -> Result<u32, u32> {
         let mut old_protection = 0;
         if unsafe {
